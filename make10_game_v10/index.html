@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0f1115" />
+  <title>MAKE 10</title>
+
+  <!-- Safe for local use; becomes active inside YouTube Playables. -->
+  <script src="https://www.youtube.com/game_api/v1"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <section id="mainMenu" class="main-menu">
+    <div class="menu-top-controls">
+      <button id="menuSoundBtn" class="sound-btn" aria-label="Toggle sound" title="Sound">🔊</button>
+      <div class="language-switcher" aria-label="Language">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+      </div>
+    </div>
+
+    <div class="menu-inner">
+      <div class="menu-title-wrap">
+        <div class="menu-eyebrow" data-i18n="menu_eyebrow">PUZZLE GAME</div>
+        <h1 class="menu-title">MAKE <span>10</span></h1>
+      </div>
+
+      <div class="menu-actions">
+        <button id="startGameBtn" class="menu-start-btn" data-i18n="start">Start</button>
+        <button id="howToPlayBtn" class="menu-how-btn" data-i18n="how_to_play">How to play</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="howToPlayModal" class="how-modal hidden" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+    <div class="how-card">
+      <button id="closeHowBtn" class="how-close" aria-label="Close">×</button>
+      <div class="how-eyebrow" data-i18n="how_to_play_upper">HOW TO PLAY</div>
+      <h2 id="howTitle" data-i18n="how_title">Make 10 from four digits</h2>
+      <p data-i18n="how_intro">Use all 4 digits exactly once and build an expression equal to 10.</p>
+
+      <div class="how-example">
+        <span>2</span>
+        <span>3</span>
+        <span>4</span>
+        <span>5</span>
+        <strong>→</strong>
+        <b>(5 − 3) × 4 + 2 = 10</b>
+      </div>
+
+      <ul>
+        <li data-i18n-html="rule_ops">You can use <strong>+ − × ÷</strong> and parentheses.</li>
+        <li data-i18n="rule_repeat">Operators can be used more than once.</li>
+        <li data-i18n="rule_drag">Tap or drag digits and operators.</li>
+        <li data-i18n="rule_reorder">You can reorder elements inside the expression.</li>
+        <li data-i18n="rule_hints">You start with 2 hints and earn +1 after every 3 solved puzzles.</li>
+      </ul>
+
+      <button id="howStartBtn" class="menu-start-btn small" data-i18n="got_it_start">Got it, start</button>
+    </div>
+  </div>
+
+  <div id="gameView" class="game-view hidden">
+<main class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">PUZZLE</div>
+        <h1>MAKE <span>10</span></h1>
+      </div>
+
+      <div class="top-actions">
+        <button id="backToMenuBtn" class="back-menu-btn" aria-label="Back to main menu" data-i18n="menu">Menu</button>
+        <button id="gameSoundBtn" class="back-menu-btn sound-mini-btn" aria-label="Toggle sound" title="Sound">🔊</button>
+
+        <div class="stats">
+        <div class="stat">
+          <span class="stat-label" data-i18n="streak">STREAK</span>
+          <strong id="streak">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label" data-i18n="time">TIME</span>
+          <strong id="timer">00:00</strong>
+        </div>
+        </div>
+      </div>
+    </header>
+
+    <p class="rules" data-i18n="game_rule">Use all 4 digits exactly once.</p>
+
+    <section class="number-section">
+      <div class="label-row">
+        <span data-i18n="digits">DIGITS</span>
+      </div>
+
+      <div id="numberRack" class="rack number-rack" aria-label="Digits">
+      </div>
+    </section>
+
+    <section class="expression-section">
+      <div class="label-row">
+        <span data-i18n="expression">EXPRESSION</span>
+        <button id="clearExpression" class="ghost-btn" data-i18n="clear">Clear</button>
+      </div>
+
+      <div id="expression" class="expression-dropzone" aria-label="Expression">
+        <div id="placeholder" class="placeholder">
+          <span data-i18n="drop_hint">Drag digits and operators here</span>
+        </div>
+        <div id="insertMarker" class="insert-marker" aria-hidden="true"></div>
+      </div>
+
+      <div class="result-line">
+        <span id="resultText">= ?</span>
+      </div>
+
+      <div id="hintPanel" class="hint-panel">
+        <button id="hintBtn" class="hint-main-btn">
+          <span class="hint-main-left">
+            <span class="hint-icon">💡</span>
+            <span data-i18n="hint">Hint</span>
+          </span>
+          <span class="hint-count">×<strong id="hintCount">2</strong></span>
+        </button>
+
+        <div id="hintText" class="hint-text hidden" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="operator-section">
+      <div class="label-row">
+        <span data-i18n="operators">OPERATORS</span>
+        <span class="hint" data-i18n="operators_hint">can be used multiple times</span>
+      </div>
+
+      <div id="operatorRack" class="rack operator-rack">
+        <button class="operator" data-token="+">+</button>
+        <button class="operator" data-token="-">−</button>
+        <button class="operator" data-token="*">×</button>
+        <button class="operator" data-token="/">÷</button>
+        <button class="operator bracket" data-token="(">(</button>
+        <button class="operator bracket" data-token=")">)</button>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="checkBtn" class="primary-btn" data-i18n="check">Check</button>
+      <button id="undoBtn" class="secondary-btn"><span>↶ </span><span data-i18n="undo">Undo</span></button>
+    </section>
+
+    <div id="message" class="message" aria-live="polite"></div>
+
+    <section id="winCard" class="win-card hidden">
+      <div>
+        <span class="win-kicker" data-i18n="correct_upper">CORRECT</span>
+        <strong id="winTime">00:00</strong>
+      </div>
+      <button id="nextPuzzle" class="next-btn"><span data-i18n="next_puzzle">Next puzzle</span> →</button>
+    </section>
+
+    <footer>
+      <span data-i18n="footer_hint">Drag elements or tap them. Drag a digit back up to return it.</span>
+    </footer>
+  </main>
+
+  <div id="dragGhost" class="drag-ghost hidden" aria-hidden="true"></div>
+
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+  </div>
+
+</body>
+</html>
