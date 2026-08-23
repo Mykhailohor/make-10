@@ -34,7 +34,7 @@
     sfx = ctx.createGain();
 
     master.gain.value = enabled ? 0.82 : 0.0001;
-    music.gain.value = 0.17;
+    music.gain.value = 0.35;
     sfx.gain.value = 0.55;
 
     music.connect(master);
