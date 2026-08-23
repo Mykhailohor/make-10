@@ -1203,6 +1203,13 @@ function startPuzzle({ keepStreak = true } = {}) {
 
 function nextPuzzle() {
   startPuzzle({ keepStreak: true });
+
+  if (gameView) {
+    gameView.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
 }
 
 
@@ -1269,6 +1276,7 @@ function startGameFromMenu() {
   gameView.classList.remove("hidden");
 
   if (!gameStartedFromMenu) {
+    gameView.scrollTop = 0;
     gameStartedFromMenu = true;
     puzzleStartTime = performance.now();
     frozenElapsedMs = 0;
