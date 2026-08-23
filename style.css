@@ -1447,3 +1447,116 @@ body.dragging-active {
     touch-action: pan-y;
   }
 }
+
+
+/* ---------- v14: scrollable How To Play modal on phones ---------- */
+
+.how-modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.how-card {
+  max-height: calc(100dvh - 40px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/*
+  On phones translated text can be taller.
+  The card is more compact and can always scroll to the bottom button.
+*/
+@media (max-width: 700px) {
+  .how-modal {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      12px
+      calc(24px + env(safe-area-inset-bottom));
+    touch-action: pan-y;
+  }
+
+  .how-card {
+    width: min(100%, 520px);
+    max-height: calc(100dvh - 52px - env(safe-area-inset-bottom));
+    margin: 0 auto;
+    padding: 21px 18px 18px;
+    border-radius: 20px;
+    touch-action: pan-y;
+  }
+
+  .how-card h2 {
+    margin-top: 6px;
+    margin-bottom: 8px;
+    font-size: clamp(24px, 7vw, 32px);
+    line-height: 1.05;
+  }
+
+  .how-card p,
+  .how-card li {
+    font-size: 14px;
+    line-height: 1.42;
+  }
+
+  .how-card ul {
+    margin: 13px 0;
+    padding-left: 19px;
+  }
+
+  .how-card li + li {
+    margin-top: 4px;
+  }
+
+  .how-example {
+    margin: 13px 0;
+    padding: 11px;
+    gap: 6px;
+  }
+
+  .how-example > span {
+    width: 31px;
+    height: 31px;
+  }
+
+  .how-example > b {
+    font-size: 12px;
+  }
+
+  .how-card .menu-start-btn.small {
+    min-height: 50px;
+    margin-top: 6px;
+  }
+}
+
+/* Extra compact layout for short phone screens / landscape. */
+@media (max-height: 700px) and (pointer: coarse) {
+  .how-modal {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .how-card {
+    max-height: calc(100dvh - 32px - env(safe-area-inset-bottom));
+    padding: 18px 16px 16px;
+  }
+
+  .how-card h2 {
+    font-size: 25px;
+  }
+
+  .how-card p,
+  .how-card li {
+    font-size: 13px;
+    line-height: 1.36;
+  }
+
+  .how-example {
+    margin: 10px 0;
+  }
+}
