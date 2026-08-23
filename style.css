@@ -1194,3 +1194,156 @@ body.dragging-active {
     margin: 0 auto;
   }
 }
+
+
+/* ---------- v12: iPhone header + Safari bottom scroll fix ---------- */
+
+@media (max-width: 700px) {
+  /*
+    Put the game title and the controls on separate rows.
+    This prevents Menu / Sound / Streak / Time from overflowing horizontally.
+  */
+  .game-view .topbar {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .game-view .topbar > div:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .game-view .topbar h1 {
+    width: 100%;
+    margin-top: 4px;
+    font-size: clamp(52px, 16vw, 72px);
+    line-height: .88;
+    white-space: nowrap;
+  }
+
+  /*
+    Second row: all four controls stay inside the card.
+  */
+  .game-view .top-actions {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns:
+      minmax(58px, .9fr)
+      minmax(58px, .9fr)
+      minmax(64px, 1fr)
+      minmax(72px, 1.12fr);
+    gap: 7px;
+    align-items: stretch;
+  }
+
+  .game-view .top-actions > .back-menu-btn,
+  .game-view .top-actions > .sound-mini-btn {
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+    min-height: 52px;
+    padding: 0 5px;
+    border-radius: 14px;
+  }
+
+  .game-view .top-actions .stats {
+    display: contents;
+  }
+
+  .game-view .top-actions .stat {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 6px 4px;
+    display: grid;
+    place-content: center;
+    border-radius: 14px;
+  }
+
+  .game-view .top-actions .stat-label {
+    font-size: 9px;
+    letter-spacing: .09em;
+  }
+
+  .game-view .top-actions .stat strong {
+    font-size: 17px;
+    line-height: 1.1;
+  }
+
+  /*
+    iOS Safari's bottom toolbar can visually cover part of the document.
+    Give the page enough real content space below the card so the user
+    can scroll every control fully above the browser chrome.
+  */
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body {
+    padding-bottom: 0 !important;
+  }
+
+  .game-view:not(.hidden) {
+    box-sizing: border-box;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible !important;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      10px
+      calc(150px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .game-view .app {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+}
+
+/* Slightly tighter for very narrow phones. */
+@media (max-width: 390px) {
+  .game-view .top-actions {
+    grid-template-columns:
+      minmax(54px, .9fr)
+      minmax(54px, .9fr)
+      minmax(60px, 1fr)
+      minmax(68px, 1.1fr);
+    gap: 5px;
+  }
+
+  .game-view .top-actions > .back-menu-btn,
+  .game-view .top-actions > .sound-mini-btn,
+  .game-view .top-actions .stat {
+    height: 50px;
+    min-height: 50px;
+  }
+
+  .game-view .top-actions > .back-menu-btn {
+    font-size: 11px;
+  }
+
+  .game-view .top-actions > .sound-mini-btn {
+    font-size: 16px;
+  }
+
+  .game-view .top-actions .stat strong {
+    font-size: 16px;
+  }
+
+  .game-view .app {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
