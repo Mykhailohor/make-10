@@ -13,16 +13,60 @@
 </head>
 <body>
 
-  <section id="mainMenu" class="main-menu">
-    <div class="menu-top-controls">
-      <button id="menuSoundBtn" class="sound-btn" aria-label="Toggle sound" title="Sound">🔊</button>
-      <div class="language-switcher" aria-label="Language">
-        <button class="lang-btn active" data-lang="en">EN</button>
-        <button class="lang-btn" data-lang="fr">FR</button>
-        <button class="lang-btn" data-lang="es">ES</button>
-      </div>
-    </div>
+  <button id="settingsBtn" class="settings-launcher" aria-label="Settings" title="Settings">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
 
+  <div id="settingsOverlay" class="settings-overlay hidden" aria-hidden="true">
+    <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-head">
+        <div>
+          <div class="settings-eyebrow" data-i18n="settings_upper">SETTINGS</div>
+          <h2 id="settingsTitle" data-i18n="settings">Settings</h2>
+        </div>
+        <button id="closeSettingsBtn" class="settings-close" aria-label="Close">×</button>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label" data-i18n="theme">Theme</div>
+        <div class="segmented-control">
+          <button class="theme-btn active" data-theme-choice="dark" data-i18n="dark">Dark</button>
+          <button class="theme-btn" data-theme-choice="light" data-i18n="light">Light</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-label" data-i18n="music_volume">Music volume</div>
+          <strong id="musicVolumeValue">100%</strong>
+        </div>
+        <input
+          id="musicVolumeSlider"
+          class="volume-slider"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value="100"
+          aria-label="Music volume"
+        >
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-label" data-i18n="language">Language</div>
+        <div class="segmented-control language-control">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="fr">FR</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <section id="mainMenu" class="main-menu">
     <div class="menu-inner">
       <div class="menu-title-wrap">
         <div class="menu-eyebrow" data-i18n="menu_eyebrow">PUZZLE GAME</div>
