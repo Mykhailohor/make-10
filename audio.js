@@ -2,6 +2,13 @@
 
 (() => {
   let enabled = localStorage.getItem("make10Audio") !== "off";
+  let musicVolume = Math.max(
+    0,
+    Math.min(
+      1,
+      Number.parseFloat(localStorage.getItem("make10MusicVolume") ?? "1") || 0
+    )
+  );
   let ctx = null;
   let master = null;
   let music = null;
@@ -34,7 +41,7 @@
     sfx = ctx.createGain();
 
     master.gain.value = enabled ? 0.82 : 0.0001;
-    music.gain.value = 0.35;
+    music.gain.value = 0.17 * musicVolume;
     sfx.gain.value = 0.55;
 
     music.connect(master);
@@ -146,6 +153,23 @@
     });
   }
 
+  function setMusicVolume(value) {
+    musicVolume = Math.max(0, Math.min(1, Number(value) || 0));
+    localStorage.setItem("make10MusicVolume", String(musicVolume));
+
+    ensure();
+
+    if (music && ctx) {
+      const now = ctx.currentTime;
+      music.gain.cancelScheduledValues(now);
+      music.gain.setTargetAtTime(0.17 * musicVolume, now, 0.03);
+    }
+  }
+
+  function getMusicVolume() {
+    return musicVolume;
+  }
+
   function updateButtons() {
     const icon = enabled ? "🔊" : "🔇";
     ["menuSoundBtn", "gameSoundBtn"].forEach(id => {
@@ -214,6 +238,8 @@
     playClick: click,
     playSuccess: success,
     isEnabled: () => enabled,
-    setEnabled
+    setEnabled,
+    setMusicVolume,
+    getMusicVolume
   };
 })();
