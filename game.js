@@ -623,6 +623,13 @@ operatorRack.querySelectorAll(".operator").forEach(button => {
 const translations = {
   en: {
     menu_eyebrow: "PUZZLE GAME",
+    settings_upper: "SETTINGS",
+    settings: "Settings",
+    theme: "Theme",
+    dark: "Dark",
+    light: "Light",
+    music_volume: "Music volume",
+    language: "Language",
     start: "Start",
     how_to_play: "How to play",
     how_to_play_upper: "HOW TO PLAY",
@@ -676,6 +683,13 @@ const translations = {
   },
   fr: {
     menu_eyebrow: "JEU DE RÉFLEXION",
+    settings_upper: "PARAMÈTRES",
+    settings: "Paramètres",
+    theme: "Thème",
+    dark: "Sombre",
+    light: "Clair",
+    music_volume: "Volume de la musique",
+    language: "Langue",
     start: "Jouer",
     how_to_play: "Comment jouer",
     how_to_play_upper: "COMMENT JOUER",
@@ -729,6 +743,13 @@ const translations = {
   },
   es: {
     menu_eyebrow: "JUEGO DE LÓGICA",
+    settings_upper: "AJUSTES",
+    settings: "Ajustes",
+    theme: "Tema",
+    dark: "Oscuro",
+    light: "Claro",
+    music_volume: "Volumen de música",
+    language: "Idioma",
     start: "Jugar",
     how_to_play: "Cómo jugar",
     how_to_play_upper: "CÓMO JUGAR",
@@ -820,6 +841,13 @@ function applyLanguage(lang) {
 
   const closeHow = document.getElementById("closeHowBtn");
   if (closeHow) closeHow.setAttribute("aria-label", t("close"));
+
+  const settingsClose = document.getElementById("closeSettingsBtn");
+  if (settingsClose) settingsClose.setAttribute("aria-label", t("close"));
+
+  const settingsLaunch = document.getElementById("settingsBtn");
+  if (settingsLaunch) settingsLaunch.setAttribute("aria-label", t("settings"));
+
   if (numberRack) numberRack.setAttribute("aria-label", t("digits"));
   if (expression) expression.setAttribute("aria-label", t("expression"));
 
@@ -834,6 +862,126 @@ document.querySelectorAll(".lang-btn").forEach(button => {
     applyLanguage(button.dataset.lang);
   });
 });
+
+
+// ---------- Settings panel ----------
+
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsOverlay = document.getElementById("settingsOverlay");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const musicVolumeSlider = document.getElementById("musicVolumeSlider");
+const musicVolumeValue = document.getElementById("musicVolumeValue");
+
+let currentTheme = localStorage.getItem("make10Theme") || "dark";
+
+function applyTheme(theme) {
+  if (theme !== "dark" && theme !== "light") {
+    theme = "dark";
+  }
+
+  currentTheme = theme;
+  localStorage.setItem("make10Theme", theme);
+  document.documentElement.dataset.theme = theme;
+
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) {
+    themeMeta.setAttribute(
+      "content",
+      theme === "light" ? "#f3f4f6" : "#0f1115"
+    );
+  }
+
+  document.querySelectorAll(".theme-btn").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.themeChoice === theme
+    );
+  });
+}
+
+function openSettings() {
+  settingsOverlay.classList.remove("hidden");
+  settingsOverlay.setAttribute("aria-hidden", "false");
+}
+
+function closeSettings() {
+  settingsOverlay.classList.add("hidden");
+  settingsOverlay.setAttribute("aria-hidden", "true");
+}
+
+function syncMusicVolumeUI() {
+  let volume = Number.parseFloat(
+    localStorage.getItem("make10MusicVolume") ?? "1"
+  );
+
+  if (!Number.isFinite(volume)) volume = 1;
+  volume = Math.max(0, Math.min(1, volume));
+
+  if (window.Make10Audio?.getMusicVolume) {
+    volume = window.Make10Audio.getMusicVolume();
+  }
+
+  const percent = Math.round(volume * 100);
+
+  if (musicVolumeSlider) {
+    musicVolumeSlider.value = String(percent);
+  }
+
+  if (musicVolumeValue) {
+    musicVolumeValue.textContent = `${percent}%`;
+  }
+}
+
+settingsBtn?.addEventListener("click", openSettings);
+closeSettingsBtn?.addEventListener("click", closeSettings);
+
+settingsOverlay?.addEventListener("pointerdown", event => {
+  if (event.target === settingsOverlay) {
+    closeSettings();
+  }
+});
+
+document.querySelectorAll(".theme-btn").forEach(button => {
+  button.addEventListener("click", () => {
+    applyTheme(button.dataset.themeChoice);
+  });
+});
+
+musicVolumeSlider?.addEventListener("input", async event => {
+  const percent = Number(event.target.value) || 0;
+  const volume = percent / 100;
+
+  if (musicVolumeValue) {
+    musicVolumeValue.textContent = `${percent}%`;
+  }
+
+  if (window.Make10Audio) {
+    await window.Make10Audio.resume();
+    window.Make10Audio.setMusicVolume(volume);
+
+    // If audio had previously been muted with the old speaker button,
+    // moving the music slider above zero makes audio available again.
+    if (percent > 0 && !window.Make10Audio.isEnabled()) {
+      await window.Make10Audio.setEnabled(true);
+    }
+  } else {
+    localStorage.setItem("make10MusicVolume", String(volume));
+  }
+});
+
+window.addEventListener("keydown", event => {
+  if (
+    event.key === "Escape" &&
+    settingsOverlay &&
+    !settingsOverlay.classList.contains("hidden")
+  ) {
+    event.preventDefault();
+    closeSettings();
+  }
+});
+
+applyTheme(currentTheme);
+syncMusicVolumeUI();
 
 
 // ---------- Parser ----------
