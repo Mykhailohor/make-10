@@ -1560,3 +1560,27 @@ body.dragging-active {
     margin: 10px 0;
   }
 }
+
+
+/* ---------- v15: touch drag vs scroll gesture ---------- */
+
+@media (pointer: coarse) {
+  .number-tile,
+  .operator,
+  .expression-token {
+    touch-action: none !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .game-view.drag-scroll-locked {
+    overflow-y: hidden !important;
+    overscroll-behavior: none;
+  }
+
+  .number-tile:active,
+  .operator:active,
+  .expression-token:active {
+    transform: scale(.98);
+  }
+}
