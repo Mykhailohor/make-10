@@ -407,6 +407,40 @@ function render() {
 // ---------- Pointer drag & drop ----------
 
 function setupPointerDrag(element, data) {
+  let touchHoldTimer = null;
+  let touchStart = null;
+  let touchDragging = false;
+  let manualScroll = false;
+  let lastTouchY = 0;
+
+  const HOLD_TO_DRAG_MS = 180;
+  const SCROLL_THRESHOLD = 9;
+
+  function clearTouchHoldTimer() {
+    if (touchHoldTimer !== null) {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+  }
+
+  function startTouchDrag(event) {
+    if (!touchStart || !pointerDrag) return;
+
+    touchDragging = true;
+    manualScroll = false;
+    pointerDrag.moved = true;
+
+    beginVisualDrag();
+
+    if (gameView) {
+      gameView.classList.add("drag-scroll-locked");
+    }
+
+    try {
+      element.setPointerCapture(event.pointerId);
+    } catch (_) {}
+  }
+
   element.addEventListener("pointerdown", event => {
     if (event.button !== undefined && event.button !== 0) return;
     if (data.disabled && data.disabled()) return;
@@ -420,38 +454,125 @@ function setupPointerDrag(element, data) {
       y: event.clientY,
       moved: false,
       sourceElement: element,
-      insertIndex: expressionTokens.length
+      insertIndex: expressionTokens.length,
+      pointerType: event.pointerType
     };
 
-    try {
-      element.setPointerCapture(event.pointerId);
-    } catch (_) {}
+    if (event.pointerType !== "touch") {
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch (_) {}
+      return;
+    }
+
+    touchStart = {
+      x: event.clientX,
+      y: event.clientY
+    };
+
+    lastTouchY = event.clientY;
+    touchDragging = false;
+    manualScroll = false;
+
+    touchHoldTimer = window.setTimeout(() => {
+      if (
+        pointerDrag &&
+        pointerDrag.pointerId === event.pointerId &&
+        !manualScroll
+      ) {
+        startTouchDrag(event);
+      }
+    }, HOLD_TO_DRAG_MS);
   });
 
   element.addEventListener("pointermove", event => {
     if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
 
-    const dx = event.clientX - pointerDrag.startX;
-    const dy = event.clientY - pointerDrag.startY;
-    const distance = Math.hypot(dx, dy);
+    if (event.pointerType !== "touch") {
+      const dx = event.clientX - pointerDrag.startX;
+      const dy = event.clientY - pointerDrag.startY;
+      const distance = Math.hypot(dx, dy);
 
-    if (!pointerDrag.moved && distance > 7) {
-      pointerDrag.moved = true;
-      beginVisualDrag();
+      if (!pointerDrag.moved && distance > 7) {
+        pointerDrag.moved = true;
+        beginVisualDrag();
+      }
+
+      if (!pointerDrag.moved) return;
+
+      event.preventDefault();
+      pointerDrag.x = event.clientX;
+      pointerDrag.y = event.clientY;
+
+      moveGhost(event.clientX, event.clientY);
+      updateDropTargets(event.clientX, event.clientY);
+      return;
     }
 
-    if (!pointerDrag.moved) return;
+    if (!touchStart) return;
+
+    const totalDx = event.clientX - touchStart.x;
+    const totalDy = event.clientY - touchStart.y;
+    const distance = Math.hypot(totalDx, totalDy);
+
+    if (!touchDragging && !manualScroll && distance > SCROLL_THRESHOLD) {
+      clearTouchHoldTimer();
+
+      const mostlyVertical = Math.abs(totalDy) >= Math.abs(totalDx) * 0.8;
+
+      if (mostlyVertical) {
+        manualScroll = true;
+      } else {
+        startTouchDrag(event);
+      }
+    }
+
+    if (manualScroll && !touchDragging) {
+      event.preventDefault();
+
+      if (gameView) {
+        const dy = event.clientY - lastTouchY;
+        gameView.scrollTop -= dy;
+      }
+
+      lastTouchY = event.clientY;
+      return;
+    }
+
+    if (!touchDragging) return;
 
     event.preventDefault();
+
     pointerDrag.x = event.clientX;
     pointerDrag.y = event.clientY;
 
     moveGhost(event.clientX, event.clientY);
     updateDropTargets(event.clientX, event.clientY);
-  });
+  }, { passive: false });
 
   const finish = event => {
     if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+
+    clearTouchHoldTimer();
+
+    if (event.pointerType === "touch") {
+      if (touchDragging) {
+        event.preventDefault();
+        completePointerDrop(event.clientX, event.clientY);
+        suppressClickUntil = performance.now() + 320;
+      }
+
+      touchStart = null;
+      touchDragging = false;
+      manualScroll = false;
+
+      if (gameView) {
+        gameView.classList.remove("drag-scroll-locked");
+      }
+
+      cleanupPointerDrag();
+      return;
+    }
 
     if (pointerDrag.moved) {
       event.preventDefault();
@@ -463,145 +584,19 @@ function setupPointerDrag(element, data) {
   };
 
   element.addEventListener("pointerup", finish);
-  element.addEventListener("pointercancel", cleanupPointerDrag);
-}
 
-function beginVisualDrag() {
-  if (!pointerDrag) return;
+  element.addEventListener("pointercancel", () => {
+    clearTouchHoldTimer();
+    touchStart = null;
+    touchDragging = false;
+    manualScroll = false;
 
-  document.body.classList.add("dragging-active");
-
-  dragGhost.textContent = DISPLAY[pointerDrag.value] || pointerDrag.value;
-  dragGhost.className = `drag-ghost ${pointerDrag.tokenType || ""}`;
-  moveGhost(pointerDrag.x, pointerDrag.y);
-
-  if (pointerDrag.kind === "expression-token") {
-    pointerDrag.sourceElement.classList.add("drag-source");
-  }
-}
-
-function moveGhost(x, y) {
-  dragGhost.style.left = `${x}px`;
-  dragGhost.style.top = `${y}px`;
-}
-
-function updateDropTargets(x, y) {
-  const exprRect = expression.getBoundingClientRect();
-  const rackRect = numberRack.getBoundingClientRect();
-
-  const overExpression = pointInRect(x, y, exprRect);
-  const overRack = pointInRect(x, y, rackRect);
-
-  expression.classList.toggle("drag-over", overExpression);
-  numberRack.classList.toggle(
-    "return-target",
-    overRack && pointerDrag?.kind === "expression-token"
-  );
-
-  if (overExpression) {
-    pointerDrag.insertIndex = findInsertionIndex(x, y);
-    placeInsertMarker(pointerDrag.insertIndex);
-  } else {
-    hideInsertMarker();
-  }
-}
-
-function pointInRect(x, y, rect) {
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-}
-
-function getExpressionElements() {
-  return [...expression.querySelectorAll(".expression-token")];
-}
-
-function findInsertionIndex(x, y) {
-  const items = getExpressionElements();
-
-  if (!items.length) return 0;
-
-  let bestIndex = items.length;
-  let bestScore = Infinity;
-
-  items.forEach((item, index) => {
-    const rect = item.getBoundingClientRect();
-
-    const beforeX = rect.left;
-    const afterX = rect.right;
-    const centerY = rect.top + rect.height / 2;
-
-    const beforeScore = Math.hypot(x - beforeX, (y - centerY) * 1.35);
-    const afterScore = Math.hypot(x - afterX, (y - centerY) * 1.35);
-
-    if (beforeScore < bestScore) {
-      bestScore = beforeScore;
-      bestIndex = index;
+    if (gameView) {
+      gameView.classList.remove("drag-scroll-locked");
     }
 
-    if (afterScore < bestScore) {
-      bestScore = afterScore;
-      bestIndex = index + 1;
-    }
+    cleanupPointerDrag();
   });
-
-  return bestIndex;
-}
-
-function placeInsertMarker(index) {
-  const items = getExpressionElements();
-
-  insertMarker.classList.add("visible");
-
-  if (index >= items.length) {
-    expression.appendChild(insertMarker);
-  } else {
-    expression.insertBefore(insertMarker, items[index]);
-  }
-}
-
-function hideInsertMarker() {
-  insertMarker.classList.remove("visible");
-  expression.appendChild(insertMarker);
-}
-
-function completePointerDrop(x, y) {
-  if (!pointerDrag) return;
-
-  const exprRect = expression.getBoundingClientRect();
-  const rackRect = numberRack.getBoundingClientRect();
-
-  if (pointInRect(x, y, exprRect)) {
-    const index = pointerDrag.insertIndex ?? expressionTokens.length;
-
-    if (pointerDrag.kind === "number-source") {
-      addNumberByIndex(pointerDrag.sourceIndex, index);
-    } else if (pointerDrag.kind === "operator-source") {
-      addOperator(pointerDrag.value, index);
-    } else if (pointerDrag.kind === "expression-token") {
-      moveExpressionToken(pointerDrag.tokenId, index);
-    }
-
-    return;
-  }
-
-  if (
-    pointInRect(x, y, rackRect) &&
-    pointerDrag.kind === "expression-token"
-  ) {
-    removeTokenById(pointerDrag.tokenId, true);
-  }
-}
-
-function cleanupPointerDrag() {
-  if (pointerDrag?.sourceElement) {
-    pointerDrag.sourceElement.classList.remove("drag-source");
-  }
-
-  pointerDrag = null;
-  dragGhost.className = "drag-ghost hidden";
-  document.body.classList.remove("dragging-active");
-  expression.classList.remove("drag-over");
-  numberRack.classList.remove("return-target");
-  hideInsertMarker();
 }
 
 // Operators can be clicked or dragged repeatedly.
